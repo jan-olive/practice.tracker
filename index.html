@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Things Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabin&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Cabin', sans-serif;
+    background: #121212;
+    color: #eee;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  button { 
+    margin: 2px; 
+    padding: 6px 10px; 
+    background: #333; 
+    color: #eee; 
+    border: none; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-family: 'Cabin', sans-serif; 
+  }
+  button:hover { background: #555; }
+
+  .tracker-container {
+    margin: 20px auto;
+    padding: 20px;
+    background: #1a1a1a;
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .session-title {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  #sessionSelect {
+    background:#333; 
+    color:#eee; 
+    border:none; 
+    border-radius:8px; 
+    padding:8px 12px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    min-width: 220px;
+    text-align-last: center;
+  }
+  #sessionSelect:hover { background:#444; }
+
+  .controls { 
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .graph-container { display: flex; justify-content: flex-start; align-items: flex-start; margin-top: 10px; overflow: hidden; }
+  .week-labels { display: flex; flex-direction: column; justify-content: flex-start; margin-right: 20px; }
+  .weekday { width: 28px; height: 28px; line-height: 28px; font-size: 12px; color: #aaa; text-align: right; margin-bottom: 4px; }
+  .graph { display: flex; gap: 4px; }
+  .week { display: flex; flex-direction: column; gap: 4px; }
+  .cell { width: 28px; height: 28px; border-radius: 4px; cursor: pointer; transition: transform 0.1s; position: relative; }
+  .cell:hover { transform: scale(1.2); z-index: 1; }
+
+  .months { display: flex; margin-left: 42px; margin-bottom: 6px; font-size: 12px; color: #aaa; position: relative; width: fit-content; height: 20px; font-family: 'Cabin', sans-serif; }
+  .month-label { position: absolute; text-align: center; transform: translateX(-50%); }
+
+  .modal-bg {
+    display: none;
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  .modal {
+    background: #222;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 250px;
+  }
+  .modal button {
+    margin: 5px;
+    background: #444;
+    color: #eee;
+  }
+  .modal button:hover {
+    background: #666;
+  }
+  .modal input {
+    width: 80%;
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: none;
+    margin-top: 10px;
+    background: #333;
+    color: #eee;
+  }
+</style>
+</head>
+<body>
+
+<div class="tracker-container">
+
+  <!-- Session Dropdown as Title -->
+  <div class="session-title">
+    <select id="sessionSelect"></select>
+  </div>
+
+  <div class="controls">
+    <button id="newSession">New Session</button>
+    <button id="renameSession">Rename Session</button>
+    <button id="deleteSession">Delete Session</button>
+    <button id="exportJSON">Export JSON</button>
+    <button id="clearAll">Clear All</button>
+  </div>
+
+  <div class="months" id="monthLabels"></div>
+
+  <div class="graph-container">
+    <div class="week-labels">
+      <div class="weekday">Sun</div>
+      <div class="weekday">Mon</div>
+      <div class="weekday">Tue</div>
+      <div class="weekday">Wed</div>
+      <div class="weekday">Thu</div>
+      <div class="weekday">Fri</div>
+      <div class="weekday">Sat</div>
+    </div>
+    <div id="graph" class="graph"></div>
+  </div>
+</div>
+
+<!-- Custom Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalContent">
+    <p id="modalMessage"></p>
+    <input type="text" id="modalInput" style="display:none">
+    <div>
+      <button id="modalYes">Yes</button>
+      <button id="modalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PALETTE = ['#080808','#002200','#004400','#008800','#00ff00'];
+
+function buildCalendar() {
+  const startMonth = new Date(2025,8,1);
+  const start = new Date(startMonth); start.setDate(start.getDate()-start.getDay());
+  const endMonth = new Date(2026,8,5);
+  const end = new Date(endMonth); end.setDate(end.getDate() + (6-end.getDay()));
+
+  const days = [];
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) days.push(new Date(d));
+  const weeks = [];
+  for(let i=0;i<days.length;i+=7) weeks.push(days.slice(i,i+7));
+  return weeks;
+}
+
+const graphDiv = document.getElementById('graph');
+const monthDiv = document.getElementById('monthLabels');
+let painting=false, eraseMode=false;
+
+function fmt(date){ return date.toISOString().slice(0,10); }
+
+let currentSession = 'default';
+let sessions = JSON.parse(localStorage.getItem('sessions')||'{"default":{}}');
+let levels = sessions[currentSession] || {};
+
+function saveLevels(){ 
+  sessions[currentSession] = levels;
+  localStorage.setItem('sessions', JSON.stringify(sessions));
+}
+
+function renderGraph(){
+  levels = sessions[currentSession] || {};
+  graphDiv.innerHTML=''; monthDiv.innerHTML='';
+
+  const weeks = buildCalendar();
+
+  // Month labels
+  const monthPositions = {};
+  weeks.forEach((week, colIndex)=>{
+    week.forEach(day=>{
+      if(day < new Date(2025,8,1) || day > new Date(2026,8,5)) return;
+      const key = `${day.getFullYear()}-${day.getMonth()}`;
+      if(day.getDate()===1) monthPositions[key] = colIndex;
+    });
+  });
+
+  const graphRect = graphDiv.getBoundingClientRect();
+  const monthRect = monthDiv.getBoundingClientRect();
+  const offset = graphRect.left - monthRect.left;
+
+  for(const [key,col] of Object.entries(monthPositions)){
+    const [y,m] = key.split('-');
+    if(parseInt(y)==2026 && parseInt(m)==8) continue;
+    const label = document.createElement('div');
+    label.className='month-label';
+    label.style.left = `${offset + col*(28+4)+14}px`;
+    label.textContent = new Date(parseInt(y),parseInt(m)).toLocaleString('default',{month:'short'});
+    monthDiv.appendChild(label);
+  }
+
+  weeks.forEach(week=>{
+    const col = document.createElement('div'); col.className='week';
+    week.forEach(d=>{
+      const key = fmt(d);
+      const cell = document.createElement('div'); cell.className='cell';
+      const lvl = levels[key]||0;
+      cell.style.backgroundColor = PALETTE[lvl];
+      cell.title = `${key} - Level ${lvl}`;
+
+      const updateCell = (increment=true)=>{
+        if(increment){ 
+          levels[key]=(levels[key]||0)+1; 
+          if(levels[key]>4) levels[key]=0; 
+        } else { 
+          levels[key]=0; 
+        }
+        cell.style.backgroundColor = PALETTE[levels[key]];
+        cell.title = `${key} - Level ${levels[key]}`;
+        saveLevels();
+      };
+
+      cell.onmousedown = e=>{
+        painting=true;
+        eraseMode = (e.button===2);
+        updateCell(!eraseMode);
+      };
+      cell.onmouseenter = e=>{ if(painting) updateCell(!eraseMode); };
+
+      col.appendChild(cell);
+    });
+    graphDiv.appendChild(col);
+  });
+}
+
+// Session dropdown
+const sessionSelect = document.getElementById('sessionSelect');
+function updateSessionSelect(){
+  sessionSelect.innerHTML='';
+  for(const s of Object.keys(sessions)){
+    const opt = document.createElement('option');
+    opt.value=s; opt.textContent=s;
+    if(s===currentSession) opt.selected=true;
+    sessionSelect.appendChild(opt);
+  }
+}
+updateSessionSelect();
+sessionSelect.onchange = ()=>{ currentSession = sessionSelect.value; renderGraph(); };
+
+// Modal
+const modalBg = document.getElementById('modalBg');
+const modalMessage = document.getElementById('modalMessage');
+const modalInput = document.getElementById('modalInput');
+const modalYes = document.getElementById('modalYes');
+const modalCancel = document.getElementById('modalCancel');
+
+function showModal(message, input=false, callback){
+  modalMessage.textContent = message;
+  modalInput.style.display = input ? 'block':'none';
+  modalInput.value = input ? currentSession :'';
+  modalBg.style.display='flex';
+  if(input) modalInput.focus();
+  modalYes.onclick = ()=>{
+    const val = input ? modalInput.value.trim() : true;
+    if(input && !val) return;
+    modalBg.style.display='none';
+    callback(val);
+  };
+  modalCancel.onclick = ()=>{ modalBg.style.display='none'; };
+}
+
+// Buttons
+document.getElementById('newSession').onclick = ()=>{
+  showModal("Enter new session name:", true, (name)=>{
+    if(sessions[name]) { alert("Session exists!"); return; }
+    sessions[name]={}; currentSession=name;
+    saveLevels(); updateSessionSelect(); renderGraph();
+  });
+};
+
+document.getElementById('renameSession').onclick = ()=>{
+  showModal("Rename current session:", true, (name)=>{
+    if(name===currentSession) return;
+    if(sessions[name]) { alert("Session exists!"); return; }
+    sessions[name]=sessions[currentSession];
+    delete sessions[currentSession];
+    currentSession=name;
+    saveLevels(); updateSessionSelect(); renderGraph();
+  });
+};
+
+document.getElementById('deleteSession').onclick = ()=>{
+  if(Object.keys(sessions).length<=1){ alert("Cannot delete the last session!"); return; }
+  showModal(`Delete session "${currentSession}"?`, false, ()=>{
+    delete sessions[currentSession];
+    currentSession = Object.keys(sessions)[0];
+    saveLevels(); updateSessionSelect(); renderGraph();
+  });
+};
+
+document.getElementById('exportJSON').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(levels,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`contrib-${currentSession}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+document.getElementById('clearAll').onclick = ()=>{
+  showModal("Are you sure you want to clear all levels?", false, ()=>{
+    levels={}; saveLevels(); renderGraph();
+  });
+};
+
+window.onmouseup = ()=>painting=false;
+window.oncontextmenu = e=>e.preventDefault();
+
+renderGraph();
+</script>
+</body>
+</html>
