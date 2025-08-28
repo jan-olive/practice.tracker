@@ -5,8 +5,9 @@
 <title>Things Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabin&display=swap" rel="stylesheet">
 <style>
+  * { font-family: 'Cabin', sans-serif; box-sizing: border-box; }
+
   body {
-    font-family: 'Cabin', sans-serif;
     background: #121212;
     color: #eee;
     display: flex;
@@ -14,108 +15,120 @@
     padding: 20px;
   }
 
-  button { 
-    margin: 2px; 
-    padding: 6px 10px; 
-    background: #333; 
-    color: #eee; 
-    border: none; 
-    border-radius: 4px; 
-    cursor: pointer; 
-    font-family: 'Cabin', sans-serif; 
-  }
-  button:hover { background: #555; }
-
   .tracker-container {
-    margin: 20px auto;
+    margin: 20px;
     padding: 20px;
     background: #1a1a1a;
     border-radius: 12px;
     text-align: center;
+    min-width: 720px;
   }
 
-  .session-title {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 20px;
+  button { 
+    background: #333; 
+    color: #eee; 
+    border: none; 
+    border-radius: 6px; 
+    padding: 6px 12px; 
+    font-size: 16px; 
+    cursor: pointer;
   }
-
-  #sessionSelect {
-    background:#333; 
-    color:#eee; 
-    border:none; 
-    border-radius:8px; 
-    padding:8px 12px;
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    min-width: 220px;
-    text-align-last: center;
-  }
-  #sessionSelect:hover { background:#444; }
+  button:hover { background: #555; }
+  button.red { background: #993333; }
+  button.red:hover { background: #bb4444; }
 
   .controls { 
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    margin-bottom: 15px; 
+    display: flex; 
+    justify-content: center; 
+    flex-wrap: wrap; 
+    gap: 10px; 
   }
 
-  .graph-container { display: flex; justify-content: flex-start; align-items: flex-start; margin-top: 10px; overflow: hidden; }
-  .week-labels { display: flex; flex-direction: column; justify-content: flex-start; margin-right: 20px; }
-  .weekday { width: 28px; height: 28px; line-height: 28px; font-size: 12px; color: #aaa; text-align: right; margin-bottom: 4px; }
+  .graph-container { display: flex; margin-top: 10px; }
+  .week-labels { display: flex; flex-direction: column; margin-right: 12px; justify-content: flex-start; }
+  .weekday { height: 28px; line-height: 28px; font-size: 12px; color: #aaa; text-align: right; margin-bottom: 4px; }
   .graph { display: flex; gap: 4px; }
   .week { display: flex; flex-direction: column; gap: 4px; }
   .cell { width: 28px; height: 28px; border-radius: 4px; cursor: pointer; transition: transform 0.1s; position: relative; }
-  .cell:hover { transform: scale(1.2); z-index: 1; }
+  .cell:hover { transform: scale(1.2); z-index:1; }
 
-  .months { display: flex; margin-left: 42px; margin-bottom: 6px; font-size: 12px; color: #aaa; position: relative; width: fit-content; height: 20px; font-family: 'Cabin', sans-serif; }
+  .months { display: flex; margin-left: 38px; margin-bottom: 6px; font-size: 12px; color: #aaa; position: relative; width: fit-content; height: 20px; }
   .month-label { position: absolute; text-align: center; transform: translateX(-50%); }
 
+ /* Session Dropdown */
+.session-dropdown-wrapper { position: relative; display: flex; justify-content: center; margin-bottom: 15px; }
+.session-button { min-width: 400px; font-size: 24px; font-weight: bold; padding: 10px 16px; }
+.session-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  border-radius: 6px;
+  min-width: 400px;
+  text-align: center;
+  z-index: 50;
+  margin-top: 4px;
+}
+.session-menu div { padding: 10px 0; font-size: 18px; cursor: pointer; }
+.session-menu div:hover { background: #333; }
+
+
+  .year-switcher { margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 20px; flex-direction: column; }
+  .year-display { font-size: 18px; font-weight: bold; }
+  
   .modal-bg {
     display: none;
-    position: fixed;
-    top:0; left:0; right:0; bottom:0;
+    position: fixed; top:0; left:0; right:0; bottom:0;
     background: rgba(0,0,0,0.7);
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
+    justify-content: center; align-items: center; z-index: 100;
   }
   .modal {
-    background: #222;
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    min-width: 250px;
+    background: #222; padding: 20px; border-radius: 8px; text-align: center; min-width: 250px;
   }
-  .modal button {
-    margin: 5px;
-    background: #444;
-    color: #eee;
-  }
-  .modal button:hover {
-    background: #666;
-  }
-  .modal input {
-    width: 80%;
-    padding: 6px 8px;
-    border-radius: 4px;
-    border: none;
-    margin-top: 10px;
-    background: #333;
-    color: #eee;
-  }
+  .modal button { margin: 5px; background: #444; color: #eee; }
+  .modal button:hover { background: #666; }
+  .modal input { width: 80%; padding: 6px 8px; border-radius: 4px; border: none; margin-top: 10px; background: #333; color:#eee; }
+
+    /* Mobile adjustments */
+  @media (max-width: 600px) {
+    .tracker-container {
+      padding: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .controls {
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+    .session-button {
+      width: 90%;
+      font-size: 20px;
+    }
+    .graph-container {
+      overflow-x: auto;
+      margin-left: 0;
+    }
+    .week-labels {
+      margin-right: 8px;
+    }
+    .cell { width: 24px; height: 24px; }
+    .weekday { line-height: 24px; font-size: 11px; }
+    .month-label { font-size: 10px; }
+    .year-display { font-size: 16px; }
+    
 </style>
 </head>
 <body>
 
 <div class="tracker-container">
 
-  <!-- Session Dropdown as Title -->
-  <div class="session-title">
-    <select id="sessionSelect"></select>
+  <div class="session-dropdown-wrapper">
+    <button id="sessionButton" class="session-button">default</button>
+    <div id="sessionMenu" class="session-menu"></div>
   </div>
 
   <div class="controls">
@@ -123,7 +136,9 @@
     <button id="renameSession">Rename Session</button>
     <button id="deleteSession">Delete Session</button>
     <button id="exportJSON">Export JSON</button>
-    <button id="clearAll">Clear All</button>
+    <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
+    <button onclick="document.getElementById('importFile').click()">Import JSON</button>
+    <button id="clearAll" class="red">Clear All</button>
   </div>
 
   <div class="months" id="monthLabels"></div>
@@ -140,9 +155,18 @@
     </div>
     <div id="graph" class="graph"></div>
   </div>
+
+  <div class="year-switcher">
+    <div style="display:flex; justify-content:center; align-items:center; gap:20px; font-size:18px; font-weight:bold;">
+      <button id="prevYear" style="padding:4px 8px;">◀</button>
+      <span id="yearLabel" style="min-width:100px; display:inline-block; text-align:center;">2025</span>
+      <button id="nextYear" style="padding:4px 8px;">▶</button>
+    </div>
+    <button id="toggleYearType" style="margin-top:10px;">Toggle Year Mode</button>
+  </div>
+
 </div>
 
-<!-- Custom Modal -->
 <div class="modal-bg" id="modalBg">
   <div class="modal" id="modalContent">
     <p id="modalMessage"></p>
@@ -156,181 +180,182 @@
 
 <script>
 const PALETTE = ['#080808','#002200','#004400','#008800','#00ff00'];
+let currentYear = 2025;
+let seasonalMode = false;
 
-function buildCalendar() {
-  const startMonth = new Date(2025,8,1);
-  const start = new Date(startMonth); start.setDate(start.getDate()-start.getDay());
-  const endMonth = new Date(2026,8,5);
-  const end = new Date(endMonth); end.setDate(end.getDate() + (6-end.getDay()));
-
-  const days = [];
-  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) days.push(new Date(d));
-  const weeks = [];
-  for(let i=0;i<days.length;i+=7) weeks.push(days.slice(i,i+7));
-  return weeks;
-}
-
-const graphDiv = document.getElementById('graph');
-const monthDiv = document.getElementById('monthLabels');
+let sessions = JSON.parse(localStorage.getItem('sessions')||'{"default":{}}');
+let currentSession = localStorage.getItem('currentSession')||'default';
+if(!sessions[currentSession]) sessions[currentSession]={};
+if(!sessions[currentSession][currentYear]) sessions[currentSession][currentYear]={};
+let levels = sessions[currentSession][currentYear];
 let painting=false, eraseMode=false;
+
+function saveLevels(){
+  sessions[currentSession][currentYear] = levels;
+  localStorage.setItem('sessions', JSON.stringify(sessions));
+  localStorage.setItem('currentSession', currentSession);
+}
 
 function fmt(date){ return date.toISOString().slice(0,10); }
 
-let currentSession = 'default';
-let sessions = JSON.parse(localStorage.getItem('sessions')||'{"default":{}}');
-let levels = sessions[currentSession] || {};
-
-function saveLevels(){ 
-  sessions[currentSession] = levels;
-  localStorage.setItem('sessions', JSON.stringify(sessions));
+function buildCalendar(year){
+  const start = new Date(year,0,1); start.setDate(start.getDate()-start.getDay());
+  const end = new Date(year,11,31); end.setDate(end.getDate() + (6 - end.getDay()));
+  const days=[]; for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) days.push(new Date(d));
+  const weeks=[]; for(let i=0;i<days.length;i+=7) weeks.push(days.slice(i,i+7));
+  return weeks;
 }
 
+function buildSeasonalCalendar(year){
+  const start = new Date(year,8,1); start.setDate(start.getDate()-start.getDay());
+  const end = new Date(year+1,7,31); end.setDate(end.getDate() + (6-end.getDay()));
+  const days=[]; for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) days.push(new Date(d));
+  const weeks=[]; for(let i=0;i<days.length;i+=7) weeks.push(days.slice(i,i+7));
+  return weeks;
+}
+
+function getWeeks(){ return seasonalMode ? buildSeasonalCalendar(currentYear) : buildCalendar(currentYear); }
+
+const graphDiv=document.getElementById('graph');
+const monthDiv=document.getElementById('monthLabels');
+
 function renderGraph(){
-  levels = sessions[currentSession] || {};
+  levels = sessions[currentSession][currentYear] || {};
   graphDiv.innerHTML=''; monthDiv.innerHTML='';
 
-  const weeks = buildCalendar();
-
-  // Month labels
-  const monthPositions = {};
-  weeks.forEach((week, colIndex)=>{
+  const weeks = getWeeks();
+  const monthPositions={};
+  weeks.forEach((week,colIndex)=>{
     week.forEach(day=>{
-      if(day < new Date(2025,8,1) || day > new Date(2026,8,5)) return;
-      const key = `${day.getFullYear()}-${day.getMonth()}`;
-      if(day.getDate()===1) monthPositions[key] = colIndex;
+      if(!seasonalMode && day.getFullYear()!==currentYear) return;
+      if(seasonalMode && ((day.getMonth()>=8 && day.getFullYear()!==currentYear) || (day.getMonth()<8 && day.getFullYear()!==currentYear+1))) return;
+      if(day.getDate()===1) monthPositions[`${day.getFullYear()}-${day.getMonth()}`]=colIndex;
     });
   });
 
-  const graphRect = graphDiv.getBoundingClientRect();
-  const monthRect = monthDiv.getBoundingClientRect();
-  const offset = graphRect.left - monthRect.left;
-
   for(const [key,col] of Object.entries(monthPositions)){
     const [y,m] = key.split('-');
-    if(parseInt(y)==2026 && parseInt(m)==8) continue;
-    const label = document.createElement('div');
+    const label=document.createElement('div');
     label.className='month-label';
-    label.style.left = `${offset + col*(28+4)+14}px`;
-    label.textContent = new Date(parseInt(y),parseInt(m)).toLocaleString('default',{month:'short'});
+    label.style.left=`${col*32 + 10}px`;
+    label.textContent=new Date(y,m).toLocaleString('default',{month:'short'});
     monthDiv.appendChild(label);
   }
 
   weeks.forEach(week=>{
-    const col = document.createElement('div'); col.className='week';
+    const col=document.createElement('div'); col.className='week';
     week.forEach(d=>{
-      const key = fmt(d);
-      const cell = document.createElement('div'); cell.className='cell';
-      const lvl = levels[key]||0;
-      cell.style.backgroundColor = PALETTE[lvl];
-      cell.title = `${key} - Level ${lvl}`;
-
-      const updateCell = (increment=true)=>{
-        if(increment){ 
-          levels[key]=(levels[key]||0)+1; 
-          if(levels[key]>4) levels[key]=0; 
-        } else { 
-          levels[key]=0; 
-        }
-        cell.style.backgroundColor = PALETTE[levels[key]];
-        cell.title = `${key} - Level ${levels[key]}`;
+      const key=fmt(d);
+      const cell=document.createElement('div'); cell.className='cell';
+      const lvl=levels[key]||0;
+      cell.style.backgroundColor=PALETTE[lvl];
+      cell.title=`${key} - Level ${lvl}`;
+      const updateCell=(increment=true)=>{
+        if(increment){ levels[key]=(levels[key]||0)+1; if(levels[key]>4) levels[key]=0; }
+        else{ levels[key]=0; }
+        cell.style.backgroundColor=PALETTE[levels[key]];
+        cell.title=`${key} - Level ${levels[key]}`;
         saveLevels();
       };
-
-      cell.onmousedown = e=>{
-        painting=true;
-        eraseMode = (e.button===2);
-        updateCell(!eraseMode);
-      };
-      cell.onmouseenter = e=>{ if(painting) updateCell(!eraseMode); };
-
+      cell.onmousedown=e=>{ painting=true; eraseMode=(e.button===2); updateCell(!eraseMode); };
+      cell.onmouseenter=e=>{ if(painting) updateCell(!eraseMode); };
       col.appendChild(cell);
     });
     graphDiv.appendChild(col);
   });
+
+  document.getElementById('yearLabel').textContent = seasonalMode ? `${currentYear} Sep → ${currentYear+1} Aug` : `${currentYear}`;
 }
 
 // Session dropdown
-const sessionSelect = document.getElementById('sessionSelect');
-function updateSessionSelect(){
-  sessionSelect.innerHTML='';
+const sessionButton = document.getElementById('sessionButton');
+const sessionMenu = document.getElementById('sessionMenu');
+
+function updateSessionMenu(){
+  sessionMenu.innerHTML='';
   for(const s of Object.keys(sessions)){
-    const opt = document.createElement('option');
-    opt.value=s; opt.textContent=s;
-    if(s===currentSession) opt.selected=true;
-    sessionSelect.appendChild(opt);
+    const div=document.createElement('div');
+    div.textContent=s;
+    div.onclick = ()=>{
+      currentSession=s;
+      sessionButton.textContent=s+'';
+      sessionMenu.style.display='none';
+      renderGraph();
+    };
+    sessionMenu.appendChild(div);
   }
 }
-updateSessionSelect();
-sessionSelect.onchange = ()=>{ currentSession = sessionSelect.value; renderGraph(); };
+updateSessionMenu();
+sessionButton.onclick = ()=>{ 
+  sessionMenu.style.display = (sessionMenu.style.display==='block')?'none':'block';
+};
 
 // Modal
-const modalBg = document.getElementById('modalBg');
-const modalMessage = document.getElementById('modalMessage');
-const modalInput = document.getElementById('modalInput');
-const modalYes = document.getElementById('modalYes');
-const modalCancel = document.getElementById('modalCancel');
+const modalBg=document.getElementById('modalBg');
+const modalMessage=document.getElementById('modalMessage');
+const modalInput=document.getElementById('modalInput');
+const modalYes=document.getElementById('modalYes');
+const modalCancel=document.getElementById('modalCancel');
 
-function showModal(message, input=false, callback){
-  modalMessage.textContent = message;
-  modalInput.style.display = input ? 'block':'none';
-  modalInput.value = input ? currentSession :'';
+function showModal(message,input=false,callback){
+  modalMessage.textContent=message;
+  modalInput.style.display=input?'block':'none';
+  modalInput.value=input?currentSession:'';
   modalBg.style.display='flex';
   if(input) modalInput.focus();
-  modalYes.onclick = ()=>{
-    const val = input ? modalInput.value.trim() : true;
-    if(input && !val) return;
-    modalBg.style.display='none';
-    callback(val);
-  };
-  modalCancel.onclick = ()=>{ modalBg.style.display='none'; };
+  modalYes.onclick=()=>{ const val=input?modalInput.value.trim():true; if(input && !val) return; modalBg.style.display='none'; callback(val); };
+  modalCancel.onclick=()=>{ modalBg.style.display='none'; };
 }
 
 // Buttons
-document.getElementById('newSession').onclick = ()=>{
-  showModal("Enter new session name:", true, (name)=>{
-    if(sessions[name]) { alert("Session exists!"); return; }
-    sessions[name]={}; currentSession=name;
-    saveLevels(); updateSessionSelect(); renderGraph();
-  });
-};
+document.getElementById('newSession').onclick=()=>{ showModal("Enter new session name:",true,(name)=>{
+  if(sessions[name]){ alert("Session exists!"); return; }
+  sessions[name]={}; currentSession=name; saveLevels(); updateSessionMenu(); sessionButton.textContent=name+''; renderGraph();
+}); };
 
-document.getElementById('renameSession').onclick = ()=>{
-  showModal("Rename current session:", true, (name)=>{
-    if(name===currentSession) return;
-    if(sessions[name]) { alert("Session exists!"); return; }
-    sessions[name]=sessions[currentSession];
-    delete sessions[currentSession];
-    currentSession=name;
-    saveLevels(); updateSessionSelect(); renderGraph();
-  });
-};
+document.getElementById('renameSession').onclick=()=>{ showModal("Rename current session:",true,(name)=>{
+  if(name===currentSession) return;
+  if(sessions[name]){ alert("Session exists!"); return; }
+  sessions[name]=sessions[currentSession]; delete sessions[currentSession]; currentSession=name;
+  saveLevels(); updateSessionMenu(); sessionButton.textContent=name+''; renderGraph();
+}); };
 
-document.getElementById('deleteSession').onclick = ()=>{
+document.getElementById('deleteSession').onclick=()=>{ 
   if(Object.keys(sessions).length<=1){ alert("Cannot delete the last session!"); return; }
-  showModal(`Delete session "${currentSession}"?`, false, ()=>{
-    delete sessions[currentSession];
-    currentSession = Object.keys(sessions)[0];
-    saveLevels(); updateSessionSelect(); renderGraph();
+  showModal(`Delete session "${currentSession}"?`,false,()=>{
+    delete sessions[currentSession]; currentSession=Object.keys(sessions)[0]; saveLevels(); updateSessionMenu(); sessionButton.textContent=currentSession+''; renderGraph();
   });
 };
 
-document.getElementById('exportJSON').onclick = ()=>{
-  const blob = new Blob([JSON.stringify(levels,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`contrib-${currentSession}.json`;
-  a.click();
+document.getElementById('exportJSON').onclick=()=>{
+  const blob=new Blob([JSON.stringify(levels,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`tracker-${currentSession}.json`; a.click();
   URL.revokeObjectURL(a.href);
 };
 
-document.getElementById('clearAll').onclick = ()=>{
-  showModal("Are you sure you want to clear all levels?", false, ()=>{
+function importJSON(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{ const data=JSON.parse(ev.target.result); levels=data; saveLevels(); renderGraph(); }
+    catch(err){ alert("Invalid JSON"); }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('clearAll').onclick=()=>{ 
+  showModal("Are you sure you want to clear all levels?",false,()=>{
     levels={}; saveLevels(); renderGraph();
   });
 };
 
-window.onmouseup = ()=>painting=false;
-window.oncontextmenu = e=>e.preventDefault();
+document.getElementById('toggleYearType').onclick=()=>{ seasonalMode=!seasonalMode; renderGraph(); };
+document.getElementById('prevYear').onclick=()=>{ currentYear--; renderGraph(); };
+document.getElementById('nextYear').onclick=()=>{ currentYear++; renderGraph(); };
+
+window.onmouseup=()=>painting=false;
+window.oncontextmenu=e=>e.preventDefault();
 
 renderGraph();
 </script>
