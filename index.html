@@ -5,7 +5,7 @@
 <title>Things Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabin&display=swap" rel="stylesheet">
 <style>
-  * { font-family: 'Cabin', sans-serif; box-sizing: border-box; }
+  * { font-family: 'Cabin', sans-serif; box-sizing: border-box; margin:0; padding:0; }
 
   body {
     background: #121212;
@@ -47,34 +47,58 @@
 
   .graph-container { display: flex; margin-top: 10px; }
   .week-labels { display: flex; flex-direction: column; margin-right: 12px; justify-content: flex-start; }
-  .weekday { height: 28px; line-height: 28px; font-size: 12px; color: #aaa; text-align: right; margin-bottom: 4px; }
+  .weekday { height: 28px; line-height: 28px; font-size: 12px; color: #aaa; text-align: right; font-weight: 700; margin-bottom: 4px; }
   .graph { display: flex; gap: 4px; }
   .week { display: flex; flex-direction: column; gap: 4px; }
-  .cell { width: 28px; height: 28px; border-radius: 4px; cursor: pointer; transition: transform 0.1s; position: relative; }
-  .cell:hover { transform: scale(1.2); z-index:1; }
+  .cell { width: 28px; height: 28px; border-radius: 4px; cursor: pointer; position: relative; }
+  .cell:hover { transform: scale(1.2); z-index:1; transition: transform 0.05s; }
 
-  .months { display: flex; margin-left: 38px; margin-bottom: 6px; font-size: 12px; color: #aaa; position: relative; width: fit-content; height: 20px; }
-  .month-label { position: absolute; text-align: center; transform: translateX(-50%); }
+  .months {
+    display: flex;
+    margin-left: 38px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #aaa;
+    position: relative;
+    width: fit-content;
+    height: 20px;
+  }
+  .month-label {
+    position: absolute;
+    text-align: center;
+    transform: translateX(-50%);
+    font-weight: bold;
+    font-size: 12px;
+    color: #fff;
+    z-index: 10;
+  }
+  .day-number-label {
+    position: absolute;
+    text-align: center;
+    transform: translateX(-50%);
+    font-weight: normal;
+    font-size: 12px;
+    color: #aaa;
+    z-index: 5;
+  }
 
- /* Session Dropdown */
-.session-dropdown-wrapper { position: relative; display: flex; justify-content: center; margin-bottom: 15px; }
-.session-button { min-width: 400px; font-size: 24px; font-weight: bold; padding: 10px 16px; }
-.session-menu {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #222;
-  border-radius: 6px;
-  min-width: 400px;
-  text-align: center;
-  z-index: 50;
-  margin-top: 4px;
-}
-.session-menu div { padding: 10px 0; font-size: 18px; cursor: pointer; }
-.session-menu div:hover { background: #333; }
-
+  .session-dropdown-wrapper { position: relative; display: flex; justify-content: center; margin-bottom: 15px; }
+  .session-button { min-width: 400px; font-size: 24px; font-weight: bold; padding: 10px 16px; }
+  .session-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #222;
+    border-radius: 6px;
+    min-width: 400px;
+    text-align: center;
+    z-index: 50;
+    margin-top: 4px;
+  }
+  .session-menu div { padding: 10px 0; font-size: 18px; cursor: pointer; }
+  .session-menu div:hover { background: #333; }
 
   .year-switcher { margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 20px; flex-direction: column; }
   .year-display { font-size: 18px; font-weight: bold; }
@@ -92,37 +116,27 @@
   .modal button:hover { background: #666; }
   .modal input { width: 80%; padding: 6px 8px; border-radius: 4px; border: none; margin-top: 10px; background: #333; color:#eee; }
 
-    /* Mobile adjustments */
+  #tooltip {
+    position:absolute; pointer-events:none; background:#222; color:#fff; padding:4px 6px; border-radius:4px; font-size:12px; display:none; z-index:100;
+  }
+
   @media (max-width: 600px) {
-    .tracker-container {
-      padding: 10px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .controls {
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
-    }
-    .session-button {
-      width: 90%;
-      font-size: 20px;
-    }
-    .graph-container {
-      overflow-x: auto;
-      margin-left: 0;
-    }
-    .week-labels {
-      margin-right: 8px;
-    }
+    .tracker-container { padding: 10px; width: 100%; }
+    .controls { flex-direction: column; gap: 8px; align-items: center; }
+    .session-button { width: 90%; font-size: 20px; }
+    .graph-container { overflow-x: auto; margin-left: 0; }
+    .week-labels { margin-right: 8px; }
     .cell { width: 24px; height: 24px; }
     .weekday { line-height: 24px; font-size: 11px; }
     .month-label { font-size: 10px; }
+    .day-number-label { font-size: 10px; }
     .year-display { font-size: 16px; }
-    
+  }
 </style>
 </head>
 <body>
+
+<div id="tooltip"></div>
 
 <div class="tracker-container">
 
@@ -179,19 +193,20 @@
 </div>
 
 <script>
+const tooltip = document.getElementById('tooltip');
+const graphDiv=document.getElementById('graph');
+const monthDiv=document.getElementById('monthLabels');
 const PALETTE = ['#080808','#002200','#004400','#008800','#00ff00'];
 let currentYear = 2025;
 let seasonalMode = false;
-
 let sessions = JSON.parse(localStorage.getItem('sessions')||'{"default":{}}');
 let currentSession = localStorage.getItem('currentSession')||'default';
 if(!sessions[currentSession]) sessions[currentSession]={};
-if(!sessions[currentSession][currentYear]) sessions[currentSession][currentYear]={};
-let levels = sessions[currentSession][currentYear];
+let levels = sessions[currentSession];
 let painting=false, eraseMode=false;
 
 function saveLevels(){
-  sessions[currentSession][currentYear] = levels;
+  sessions[currentSession] = levels;
   localStorage.setItem('sessions', JSON.stringify(sessions));
   localStorage.setItem('currentSession', currentSession);
 }
@@ -216,31 +231,25 @@ function buildSeasonalCalendar(year){
 
 function getWeeks(){ return seasonalMode ? buildSeasonalCalendar(currentYear) : buildCalendar(currentYear); }
 
-const graphDiv=document.getElementById('graph');
-const monthDiv=document.getElementById('monthLabels');
-
 function renderGraph(){
-  levels = sessions[currentSession][currentYear] || {};
   graphDiv.innerHTML=''; monthDiv.innerHTML='';
-
   const weeks = getWeeks();
-  const monthPositions={};
-  weeks.forEach((week,colIndex)=>{
-    week.forEach(day=>{
-      if(!seasonalMode && day.getFullYear()!==currentYear) return;
-      if(seasonalMode && ((day.getMonth()>=8 && day.getFullYear()!==currentYear) || (day.getMonth()<8 && day.getFullYear()!==currentYear+1))) return;
-      if(day.getDate()===1) monthPositions[`${day.getFullYear()}-${day.getMonth()}`]=colIndex;
-    });
-  });
+  const monthShown = {};
 
-  for(const [key,col] of Object.entries(monthPositions)){
-    const [y,m] = key.split('-');
-    const label=document.createElement('div');
-    label.className='month-label';
-    label.style.left=`${col*32 + 10}px`;
-    label.textContent=new Date(y,m).toLocaleString('default',{month:'short'});
-    monthDiv.appendChild(label);
-  }
+  weeks.forEach((week, colIndex) => {
+    let labelDiv = document.createElement('div');
+    const firstOfMonth = week.find(d => d.getDate() === 1);
+    if (firstOfMonth && !monthShown[`${firstOfMonth.getFullYear()}-${firstOfMonth.getMonth()}`]) {
+      labelDiv.className = 'month-label';
+      labelDiv.textContent = firstOfMonth.toLocaleString('default', { month: 'short' });
+      monthShown[`${firstOfMonth.getFullYear()}-${firstOfMonth.getMonth()}`] = true;
+    } else {
+      labelDiv.className = 'day-number-label';
+      labelDiv.textContent = week[0].getDate();
+    }
+    labelDiv.style.left = `${colIndex * 32 + 10}px`;
+    monthDiv.appendChild(labelDiv);
+  });
 
   weeks.forEach(week=>{
     const col=document.createElement('div'); col.className='week';
@@ -248,8 +257,22 @@ function renderGraph(){
       const key=fmt(d);
       const cell=document.createElement('div'); cell.className='cell';
       const lvl=levels[key]||0;
+      const today = new Date();
+if(d.getFullYear() === today.getFullYear() &&
+   d.getMonth() === today.getMonth() &&
+   d.getDate() === today.getDate()) {
+    cell.style.border = "2px solid #ffcc00"; // yellow outline
+    cell.style.boxSizing = "border-box"; // ensure border doesn't shrink cell
+}
       cell.style.backgroundColor=PALETTE[lvl];
       cell.title=`${key} - Level ${lvl}`;
+      cell.onmousemove = e => {
+        tooltip.style.left = e.pageX + 10 + 'px';
+        tooltip.style.top = e.pageY + 10 + 'px';
+        tooltip.textContent = cell.title;
+        tooltip.style.display = 'block';
+      };
+      cell.onmouseleave = () => { tooltip.style.display = 'none'; };
       const updateCell=(increment=true)=>{
         if(increment){ levels[key]=(levels[key]||0)+1; if(levels[key]>4) levels[key]=0; }
         else{ levels[key]=0; }
@@ -278,7 +301,8 @@ function updateSessionMenu(){
     div.textContent=s;
     div.onclick = ()=>{
       currentSession=s;
-      sessionButton.textContent=s+'';
+      sessionButton.textContent=s;
+      levels = sessions[currentSession]||{};
       sessionMenu.style.display='none';
       renderGraph();
     };
@@ -310,20 +334,19 @@ function showModal(message,input=false,callback){
 // Buttons
 document.getElementById('newSession').onclick=()=>{ showModal("Enter new session name:",true,(name)=>{
   if(sessions[name]){ alert("Session exists!"); return; }
-  sessions[name]={}; currentSession=name; saveLevels(); updateSessionMenu(); sessionButton.textContent=name+''; renderGraph();
+  sessions[name]={}; currentSession=name; levels={}; saveLevels(); updateSessionMenu(); sessionButton.textContent=name; renderGraph();
 }); };
 
 document.getElementById('renameSession').onclick=()=>{ showModal("Rename current session:",true,(name)=>{
   if(name===currentSession) return;
   if(sessions[name]){ alert("Session exists!"); return; }
-  sessions[name]=sessions[currentSession]; delete sessions[currentSession]; currentSession=name;
-  saveLevels(); updateSessionMenu(); sessionButton.textContent=name+''; renderGraph();
+  sessions[name]=sessions[currentSession]; delete sessions[currentSession]; currentSession=name; saveLevels(); updateSessionMenu(); sessionButton.textContent=name; renderGraph();
 }); };
 
 document.getElementById('deleteSession').onclick=()=>{ 
   if(Object.keys(sessions).length<=1){ alert("Cannot delete the last session!"); return; }
   showModal(`Delete session "${currentSession}"?`,false,()=>{
-    delete sessions[currentSession]; currentSession=Object.keys(sessions)[0]; saveLevels(); updateSessionMenu(); sessionButton.textContent=currentSession+''; renderGraph();
+    delete sessions[currentSession]; currentSession=Object.keys(sessions)[0]; levels = sessions[currentSession]||{}; saveLevels(); updateSessionMenu(); sessionButton.textContent=currentSession; renderGraph();
   });
 };
 
@@ -350,7 +373,10 @@ document.getElementById('clearAll').onclick=()=>{
   });
 };
 
-document.getElementById('toggleYearType').onclick=()=>{ seasonalMode=!seasonalMode; renderGraph(); };
+document.getElementById('toggleYearType').onclick=()=>{ 
+  seasonalMode=!seasonalMode; renderGraph(); 
+};
+
 document.getElementById('prevYear').onclick=()=>{ currentYear--; renderGraph(); };
 document.getElementById('nextYear').onclick=()=>{ currentYear++; renderGraph(); };
 
